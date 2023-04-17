@@ -3,7 +3,6 @@ import torch.nn.functional as F
 
 import numpy as np
 import matplotlib.pyplot as plt
-from torchvision.transforms import GaussianBlur
 import gaussian_windows as gw
 
 from optim import ShiftOptim
