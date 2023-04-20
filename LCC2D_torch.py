@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import gaussian_windows as gw
 
 from optim import ShiftOptim
-from poly_interp import vec_polyfit2d, PytorchPolyFit2D
+from poly_interp import vec_polyfit2d, PytorchPolyFit2D, poly_surface
 
 from itertools import product
 
@@ -15,8 +15,17 @@ import time
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def _get_h(f, l1, l2):
+def argmax2d(im):
+    h, w = im.shape  # number of rows, number of columns
+    index = im.argmax()  # flattened index
 
+    j = index % w  # row
+    i = index // w  # column
+
+    return int(i), int(j)
+
+
+def _get_h(f, l1, l2):
     height, width = f.shape
     h = torch.zeros((height, width))
 
@@ -62,35 +71,48 @@ class LCC2D:
 
         self.dw, self.dh, self.corr, self.convolutions = self.lcc()
 
-        self.subdw, self.subdh = self.subpixel()
+        self.poly, self.subdw, self.subdh = self.subpixel()
 
     def lcc(self):
-
 
         t0 = time.time()
         if self.verbose:
             print(f'computing localized cross correlations')
 
+        # hale initially smooths the images with a sigma=1 window
+        smooth_window = gw.torch_gaussian_window2d(1).to(self.f.dtype)
+        f = F.conv2d(self.f.reshape(1, 1, self.height, self.width),
+                     weight=smooth_window, padding='same')[0, 0]
+        g = F.conv2d(self.g.reshape(1, 1, self.height, self.width),
+                     weight=smooth_window, padding='same')[0, 0]
+
         search_window = gw.torch_gaussian_window2d(self.search_sigma).to(self.f.dtype)
 
         # convolutions is a tensor of size (hlags * wlags, 1 channel, height, width)
-        convolutions = torch.zeros((len(self.hlags)*len(self.wlags), 1, self.height, self.width), device=device)
+        convolutions = torch.zeros((len(self.hlags) * len(self.wlags), 1, self.height, self.width), device=device)
 
         # we also need to apply normalization factors to the images
-        cff = self.f/(F.conv2d((self.f * self.f).reshape(1, 1, self.height, self.width),
-                               weight=search_window, padding='same').sqrt()[0, 0])
-        cgg = self.g/(F.conv2d((self.g * self.g).reshape(1, 1, self.height, self.width),
-                               weight=search_window, padding='same').sqrt()[0, 0])
+        cff = 1 / (F.conv2d((f * f).reshape(1, 1, self.height, self.width),
+                            weight=search_window, padding='same').sqrt()[0, 0])
+        cgg = 1 / (F.conv2d((g * g).reshape(1, 1, self.height, self.width),
+                            weight=search_window, padding='same').sqrt()[0, 0])
+        cff_moved = torch.zeros((len(self.hlags) * len(self.wlags), 1, self.height, self.width), device=device)
 
-        # this is the only part involving for loops,
+        # we need to move around one image and store it in an array
+        # we do so for the image and it's normalization factor
+        # this is the only part involving for loops
         for i, (l1, l2) in enumerate(product(self.hlags, self.wlags)):
-            convolutions[i, 0] = _get_h(cff, l1, l2)
+            convolutions[i, 0] = _get_h(f, l1, l2)
+            cff_moved[i, 0] = _get_h(cff, l1, l2)
 
         # multiplication of the moved image with the unmoved image
-        convolutions = convolutions * cgg.reshape(1, 1, self.height, self.width)
+        convolutions = convolutions * g.reshape(1, 1, self.height, self.width)
 
-        # we finally localize the cross correlation with a gaussian blur
+        # we localize the cross correlation with a gaussian blur
         convolutions = F.conv2d(convolutions, weight=search_window, padding='same')
+
+        # we normalize the convolutions by our factors
+        convolutions = convolutions * cff_moved * cgg
 
         # we look for the maximum indices
         values, indices = torch.max(convolutions.reshape(len(self.hlags) * len(self.wlags), -1), dim=0)
@@ -106,7 +128,7 @@ class LCC2D:
 
         if self.verbose:
             t1 = time.time()
-            print(f'\rtook {(t1-t0):.2f} seconds')
+            print(f'\rtook {(t1 - t0):.2f} seconds')
 
         return dw, dh, values, convolutions
 
@@ -117,14 +139,21 @@ class LCC2D:
         if self.verbose:
             print(f'computing subpixel displacements')
 
-        # taking into account where the index is at the border
+        # taking into account where the index is too close to the given threshold for the rows
         dh = self.dh.clone()
-        dh[dh == self.hlags.min()] += 1
-        dh[dh == self.hlags.max()] -= 1
 
+        h_index_left = dh - self.hlags.min() < self.threshold
+        h_index_right = self.hlags.max() - dh < self.threshold
+        dh[h_index_left] += self.hlags.min() - dh[h_index_left] + self.threshold
+        dh[h_index_right] -= dh[h_index_right] - self.hlags.max() + self.threshold
+
+        # we do the same but for the columns
         dw = self.dw.clone()
-        dw[dw == self.wlags.min()] += 1
-        dw[dw == self.wlags.max()] -= 1
+
+        w_index_left = dw - self.wlags.min() < self.threshold
+        w_index_right = self.wlags.max() - dw < self.threshold
+        dw[w_index_left] += self.wlags.min() - dw[w_index_left] + self.threshold
+        dw[w_index_right] -= dw[w_index_right] - self.wlags.max() + self.threshold
 
         # we need to extract the surrounding images to the integer maximum to be able to fit the quadratic surface
         i = dh.flatten() + self.hlags.max()
@@ -145,23 +174,136 @@ class LCC2D:
             i2, j2 = i + di, j + dj
             images[di + self.threshold, dj + self.threshold] = conv[i2, j2, arange]
 
+        # we jsut have to flip it one way because of indexing
+        images = images.moveaxis(0, 1)
+
         # the coordinates are the same for every quadratic surface
-        x = torch.arange(n, dtype=torch.float32) - self.threshold
-        X = torch.stack(torch.meshgrid(x, x)).reshape(2, -1)
+        X = torch.stack(torch.meshgrid(offset, offset)).reshape(2, -1)
 
         # this vectorized implementation for fitting polynomials goes hard
-        poly = PytorchPolyFit2D(X, images.reshape(n * n, -1))
-        dh, dw = poly.fit()
+        poly = PytorchPolyFit2D(X, images.reshape(n * n, -1), order=2)
+        dw, dh = poly.newton()
 
         if self.verbose:
             t1 = time.time()
-            print(f'\rtook {(t1-t0):.2f} seconds')
+            print(f'\rtook {(t1 - t0):.2f} seconds')
 
-        return self.dw + dw.reshape(self.height, self.width), self.dh + dh.reshape(self.height, self.width)
+        return poly, self.dw + dw.reshape(self.height, self.width), self.dh + dh.reshape(self.height, self.width)
+
+    def debug_plot(self, aspect=1):
+
+        coeffs = np.moveaxis(self.poly.coeffs.numpy().reshape(-1, *self.f.shape), 0, -1)
+
+        # CLICKABLE FIGURE
+        i0, j0 = self.height // 2, self.width // 2
+        # creation of the figure and adding the main axes on which stuff will be plotted
+        fig4 = plt.figure(figsize=(12, 6))
+        gs = fig4.add_gridspec(2, 4)
+        f_ax = fig4.add_subplot(gs[0, 0])
+        g_ax = fig4.add_subplot(gs[1, 0])
+        u_ax = fig4.add_subplot(gs[0, 1])
+        v_ax = fig4.add_subplot(gs[1, 1])
+        # main_ax is the one showing the correlation value with respect to vertical and horizontal lags
+        main_ax = fig4.add_subplot(gs[:, 2:])
+        main_ax.yaxis.tick_right()
+        main_ax.yaxis.set_label_position('right')
+        main_ax.set_xlabel('$l_2$')
+        main_ax.set_ylabel('$l_1$', rotation=0)
+        # f_ax and g_ax are the before and after image
+        f_ax.imshow(self.f, aspect=aspect, origin='lower')
+        f_ax.text(0.99, 0.99, '$f$', ha='right', va='top', transform=f_ax.transAxes)
+        g_ax.imshow(self.g, aspect=aspect, origin='lower')
+        g_ax.text(0.99, 0.99, '$g$', ha='right', va='top', transform=g_ax.transAxes)
+        # u_ax and v_ax are the axes on which we show the estimated shifts
+        u_ax.imshow(self.subdw, aspect=aspect, origin='lower', vmin=vf[0].min(), vmax=vf[0].max())
+        u_ax.text(0.99, 0.99, '$\hat{u}$', ha='right', va='top', transform=u_ax.transAxes)
+        v_ax.imshow(self.subdh, aspect=aspect, origin='lower', vmin=vf[1].min(), vmax=vf[1].max())
+        v_ax.text(0.99, 0.99, '$\hat{v}$', ha='right', va='top', transform=v_ax.transAxes)
+        # conv_im is the 2d image that will be updated for every row and column inspected
+        conv_im = main_ax.imshow(self.convolutions[:, :, i0, j0], aspect='auto', origin='lower',
+                                 extent=[self.wlags.min() - 0.5,
+                                         self.wlags.max() + 0.5,
+                                         self.hlags.min() - 0.5,
+                                         self.hlags.max() + 0.5],
+                                 vmin=-1, vmax=1)
+        # here we want to be able to have an updating polynomial surface
+        I, J = argmax2d(self.convolutions[:, :, i0, j0])
+        xx, yy, z = poly_surface(coeffs[i0, j0], 0, 0, degree=2, threshold=self.threshold)
+        conv_cntrs = [
+            main_ax.contour(xx - self.hlags.max() + J, yy - self.wlags.max() + I, z, colors='k', linewidths=0.5)]
+        # those lines on main_ax show the estimated maximum value according to the polynomial surface
+        lx = main_ax.axvline(self.subdw[i0, j0], c='red', lw=0.5)
+        ly = main_ax.axhline(self.subdh[i0, j0], c='red', lw=0.5)
+        # we are adding moving circles that show the moving windows
+        patches = []
+        from matplotlib.patches import Circle
+        for ax1 in (f_ax, g_ax):
+            for i in [1, 2, 3]:
+                circle = Circle((j0, i0), radius=i * self.search_sigma, alpha=0.1 * (4 - i),
+                                facecolor='tab:red', ec='tab:red',
+                                linewidth=1.0)
+                ax1.add_patch(circle)
+                patches.append(circle)
+        # here we are adding horizontal and vertical lines that show the central point of the window
+        horizontal_lines = []
+        vertical_lines = []
+        for ax1 in (u_ax, v_ax):
+            horizontal_lines.append(ax1.axhline(i0, c='red', lw=0.25))
+            vertical_lines.append(ax1.axvline(j0, c='red', lw=0.25))
+
+        # updating function
+        def on_click(event):
+            # we want to make sure that we are actually clicking in the good axes
+            if event.inaxes is None:
+                return
+            if event.inaxes != main_ax:
+                # fetching the x and y position of the cursor
+                j, i = int(event.xdata), int(event.ydata)
+                # updating the main_ax image
+                conv_im.set_data(self.convolutions[:, :, i, j])
+                # updating the contours estimated from the polynomial surface
+                # here this part is a bit tedious as we have to
+                # compute the surface, remove and redraw the contours everytime
+                # it doesn't seem to be too laggy however
+                for tp in conv_cntrs[0].collections:
+                    tp.remove()
+                I, J = argmax2d(self.convolutions[:, :, i, j])
+                xx, yy, z = poly_surface(coeffs[i, j], 0, 0,
+                                         degree=2,
+                                         threshold=self.threshold)
+
+                conv_cntrs[0] = main_ax.contour(xx - self.hlags.max() + J, yy - self.wlags.max() + I,
+                                                z, colors='k', linewidths=0.5)
+                # updating the horizontal and vertical lines and the moving windows
+                for l1 in horizontal_lines:
+                    l1.set_ydata([i, i])
+                for l2 in vertical_lines:
+                    l2.set_xdata([j, j])
+                for c in patches:
+                    c.center = j, i
+                lx.set_xdata([self.subdw[i, j], self.subdw[i, j]])
+                ly.set_ydata([self.subdh[i, j], self.subdh[i, j]])
+            fig4.canvas.draw_idle()  # this is necessary so that it moves
+
+        # this function ensures that we can keep clicking and moving
+        def on_move(event):
+            if event.button == 1:
+                on_click(event)
+
+        # connecting the figure to the different event functions
+        fig4.canvas.mpl_connect('button_press_event', on_click)
+        fig4.canvas.mpl_connect('motion_notify_event', on_move)
+        # ensuring that zooming on one axes zooms on the others
+        f_ax.get_shared_x_axes().join(g_ax, u_ax, v_ax)
+        g_ax.get_shared_x_axes().join(f_ax, u_ax, v_ax)
+        f_ax.get_shared_y_axes().join(g_ax, u_ax, v_ax)
+        g_ax.get_shared_y_axes().join(f_ax, u_ax, v_ax)
+        # ensuring that main_ax's limits do not change
+        main_ax.set_xlim(main_ax.get_xlim())
+        main_ax.set_ylim(main_ax.get_ylim())
 
 
 if __name__ == '__main__':
-
     im0 = np.load('data/spongebob_warp2_0.npy', allow_pickle=True).astype(np.float32)
     im5 = np.load('data/spongebob_warp2_5.npy', allow_pickle=True).astype(np.float32)
     vf = np.load('data/vf_warp2.npy', allow_pickle=True) * 5
@@ -169,17 +311,20 @@ if __name__ == '__main__':
     maxlag = 20
     wlags = np.arange(-maxlag, maxlag + 1)
     hlags = np.arange(-maxlag, maxlag + 1)
-    search_sigma = 15
+    search_sigma = 10
 
     lcc = LCC2D(im0, im5,
                 hlags, wlags,
                 search_sigma,
-                threshold=1)
+                threshold=3)
+
+    lcc.debug_plot()
+    plt.show()
 
     shift = torch.stack((lcc.subdw, lcc.subdh)).to(torch.float32)
 
-    lmbda = 1e2
-    beta = 1e4
+    lmbda = 1e3
+    beta = 1e2
 
     model = ShiftOptim(lcc.f, lcc.g, shift, lmbda=lmbda, beta=beta, correlation=lcc.convolutions)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -238,7 +383,6 @@ if __name__ == '__main__':
 
     fig.subplots_adjust(hspace=0.05, wspace=0.05)
     plt.show()
-
 
 """
 im0 = (im0 - im0.min())/(im0.max() - im0.min())

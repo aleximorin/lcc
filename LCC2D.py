@@ -189,8 +189,8 @@ class LCC2D:
         # smoothing the images with a sigma = 1 gaussian window
         smooth_window = gw.gaussian_window2d(1)
         smooth_window = smooth_window / smooth_window.sum()
-        f = convolve(self.f, smooth_window, mode='same')
-        g = convolve(self.g, smooth_window, mode='same')
+        f = self.f  # convolve(self.f, smooth_window, mode='same')
+        g = self.g  # convolve(self.g, smooth_window, mode='same')
 
         # we can compute the normalization factors only one time
         cff = 1/np.sqrt(_cfg(f, f, 0, 0, self.search_window))
@@ -201,8 +201,8 @@ class LCC2D:
 
         # WARNING: ATTEMPT
         # here we smooth the correlations in the xy space for every lag
-        convolutions = convolve1d(convolutions, self.smooth_window, axis=-1)
-        convolutions = convolve1d(convolutions, self.smooth_window, axis=-2)
+        #convolutions = convolve1d(convolutions, self.smooth_window, axis=-1)
+        #convolutions = convolve1d(convolutions, self.smooth_window, axis=-2)
 
         # we loop in 2d to compute subpixel displacements
         # # also could be parallelized

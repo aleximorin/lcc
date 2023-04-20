@@ -78,7 +78,7 @@ class ShiftOptim(torch.nn.Module):
         mse = torch.sqrt(err2.mean())
 
         # spatial derivative loss
-        grad = F.conv2d(self.weights.reshape(2, 1, *self.f.shape), self.laplace)
+        grad = F.conv2d(self.weights.reshape(2, 1, *self.f.shape), self.laplace, padding='same')
 
         # loss related to prior knowledge of the deformation computed by the localized cross correlation
         # we need to change the coordinates relative to the lags

@@ -5,7 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bdd7c877-2afe-4d9b-bb8d-31dcd62f3c19" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LCC2D.py" beforeDir="false" afterPath="$PROJECT_DIR$/LCC2D.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/LCC2D_torch.py" beforeDir="false" afterPath="$PROJECT_DIR$/LCC2D_torch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/environment.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/optim.py" beforeDir="false" afterPath="$PROJECT_DIR$/optim.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,12 +40,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/alexi/Desktop/2scool4cool/a2022/image_matching&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "last_opened_file_path": "C:/Users/alexi/Desktop/2scool4cool/a2022/image_matching",
+    "settings.editor.selected.configurable": "editor.preferences.fonts.default"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\alexi\Desktop\2scool4cool\a2022\image_matching" />
@@ -52,7 +56,7 @@
       <recent name="C:\Users\alexi\Desktop\2scool4cool\a2022\image matching\data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.lcc_seismic">
+  <component name="RunManager" selected="Python.LCC2D_torch">
     <configuration name="LCC2D" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="image_matching" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -95,7 +99,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="image_warping" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="VMorph" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="image_matching" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -107,7 +111,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/image_warping.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/VMorph.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -137,7 +141,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="optim" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="poly_interp" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="image_matching" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -149,7 +153,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/optim.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/poly_interp.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -181,11 +185,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.lcc_seismic" />
         <item itemvalue="Python.LCC2D_torch" />
-        <item itemvalue="Python.optim" />
-        <item itemvalue="Python.image_warping" />
+        <item itemvalue="Python.poly_interp" />
         <item itemvalue="Python.LCC2D" />
+        <item itemvalue="Python.VMorph" />
+        <item itemvalue="Python.lcc_seismic" />
       </list>
     </recent_temporary>
   </component>
@@ -223,11 +227,6 @@
           <url>file://$PROJECT_DIR$/twod_hale_localcc.py</url>
           <line>165</line>
           <option name="timeStamp" value="315" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/poly_interp.py</url>
-          <line>288</line>
-          <option name="timeStamp" value="352" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../../e2021/arcelor_data/main.py</url>
@@ -324,6 +323,26 @@
           <line>28</line>
           <option name="timeStamp" value="719" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/VMorph.py</url>
+          <line>80</line>
+          <option name="timeStamp" value="721" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/LCC2D.py</url>
+          <line>195</line>
+          <option name="timeStamp" value="751" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/poly_interp.py</url>
+          <line>358</line>
+          <option name="timeStamp" value="765" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/LCC2D_torch.py</url>
+          <line>328</line>
+          <option name="timeStamp" value="774" />
+        </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
@@ -335,7 +354,10 @@
     </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
-        <watch expression="self.beta * diff.mean()" language="Python" />
+        <watch expression="self.coeffs" language="Python" />
+        <watch expression="grad" language="Python" />
+        <watch expression="hess" language="Python" />
+        <watch expression="self.X0" language="Python" />
       </configuration>
     </watches-manager>
   </component>
