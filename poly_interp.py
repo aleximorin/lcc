@@ -6,47 +6,137 @@ from scipy.optimize import root, root_scalar
 import torch
 
 
-def polymatrix2d(x, y, order=2):
-    ij = itertools.product(range(order + 1), range(order + 1))
+def polymatrix2d(x, y, ij):
 
-    # z needs to be of shape (3*3, height * width)
     size = len(x)
-
-    ncols = (order + 1) ** 2
-    G = torch.zeros((size, ncols))
+    G = torch.zeros((size, len(ij)))
     for k, (i, j) in enumerate(ij):
         G[:, k] = x ** i * y ** j
 
     return G
 
 
-def vec_polyfit2d(x, y, z, order=2):
-    G = polymatrix2d(x, y, order=order)
+def vec_polyfit2d(x, y, z, ij):
+
+    # x and y are vectors of length n_images
+    # z is an array of size (9, n_images)
+    # ij is the polynomial's degrees for every combination of x and y
+
+    # m is of shape (n_coeffs, n_images)
+    G = polymatrix2d(x, y, ij)
     m, _, _, _ = torch.linalg.lstsq(G, z, rcond=1e-10)
     return m
 
 
 class PytorchPolyFit2D(torch.nn.Module):
-    def __init__(self, X, images):
+    def __init__(self, X, images, order=2):
         super(PytorchPolyFit2D, self).__init__()
 
         self.x, self.y = X
         self.images = images
 
-        self.X0 = torch.nn.Parameter(torch.zeros(2, self.images.shape[-1]))
-        self.coeffs = vec_polyfit2d(self.x, self.y, self.images)
+        self.order = order
+        self.ij = np.array([_ for _ in itertools.product(range(order + 1), range(order + 1))])
+
+        """
+        dz/dx = a3 + a4y + a5y^2 + 2a6x + 2a7xy + 2a8xy^2
+        dz/dy = a1 + 2a2y + a4x + 2a5xy + a7x^2 + 2a8x^2y
+        """
+
+        # compute the polynomial's gradient
+        self.gradx = self.ij[:, 0] - 1
+        self.gradx[self.gradx < 0] = 0
+        self.gradx = np.vstack([self.gradx, self.ij[:, 1]]).T
+        self.gradmaskx = torch.tensor((self.ij[:, 0] > 0) * self.ij[:, 0])
+
+        self.grady = self.ij[:, 1] - 1
+        self.grady[self.grady < 0] = 0
+        self.grady = np.vstack([self.ij[:, 0], self.grady]).T
+        self.gradmasky = torch.tensor((self.ij[:, 1] > 0) * self.ij[:, 1])
+
+        """        
+        d2z/dxx = 2a6 + 2a7y + 2a8y^2
+        d2z/dyy = 2a2 + 2a5x + 2a8x^2
+        d2z/dxy = a4 + 2a5y + 2a7x + 4a8xy
+        """
+        # compute the polynomial's hessian
+        self.hessx = self.ij[:, 0] - 2
+        self.hessx[self.hessx < 0] = 0
+        self.hessx = np.vstack([self.hessx, self.ij[:, 1]]).T
+        self.hessmaskx = torch.tensor((self.ij[:, 0] > 1) * (self.ij[:, 0]))
+
+        self.hessy = self.ij[:, 1] - 2
+        self.hessy[self.hessy < 0] = 0
+        self.hessy = np.vstack([self.ij[:, 0], self.hessy]).T
+        self.hessmasky = torch.tensor((self.ij[:, 1] > 1) * (self.ij[:, 1]))
+
+        self.hessxy = torch.tensor(self. ij - 1)
+        self.hessxy[self.hessxy < 0] = 0
+        self.hessmaskxy = self.gradmaskx * self.gradmasky
+
+        # we finally initiate the parameters for which we want to find where the gradient is null
+        self.X0 = torch.zeros(2, self.images.shape[-1])
+        self.coeffs = vec_polyfit2d(self.x, self.y, self.images, self.ij)
 
     def forward(self):
-        G = polymatrix2d(*self.X0)
+        G = polymatrix2d(*self.X0, self.ij)
         return torch.einsum('ij, ji -> i', G, self.coeffs)
 
-    def fit(self, n=800, lr=1e-3):
+    def gradient(self):
+        Gx = polymatrix2d(*self.X0, self.gradx)
+        Gy = polymatrix2d(*self.X0, self.grady)
+
+        dzdx = torch.einsum('ij, ji -> i', Gx, self.coeffs * self.gradmaskx[:, None])
+        dzdy = torch.einsum('ij, ji -> i', Gy, self.coeffs * self.gradmasky[:, None])
+
+        grad = torch.stack((dzdx, dzdy))
+        grad = grad.moveaxis(-1, 0)
+        return grad
+
+    def hessian(self):
+        Gxx = polymatrix2d(*self.X0, self.hessx)
+        Gyy = polymatrix2d(*self.X0, self.hessy)
+        Gxy = polymatrix2d(*self.X0, self.hessxy)
+        d2zdxx = torch.einsum('ij, ji -> i', Gxx, self.coeffs * self.hessmaskx[:, None])
+        d2zdyy = torch.einsum('ij, ji -> i', Gyy, self.coeffs * self.hessmasky[:, None])
+        d2zdxy = torch.einsum('ij, ji -> i', Gxy, self.coeffs * self.hessmaskxy[:, None])
+
+        hess = torch.stack([torch.stack([d2zdxx, d2zdxy]),
+                            torch.stack([d2zdxy, d2zdyy])])
+        hess = hess.moveaxis(-1, 0)
+        return hess
+
+    def newton(self, niter=20, nugget=1e-3):
+        self.X0 = torch.zeros(2, self.images.shape[-1])
+
+        reg = torch.eye(2, 2)[None, :]*nugget
+        dxs = []
+        x0s = []
+        for i in range(niter):
+            grad = self.gradient()
+            hess = self.hessian()
+            inv = torch.linalg.inv(hess + reg)
+            dx = torch.einsum('nij, ni -> jn', inv, grad)
+            self.X0 = self.X0 - dx
+
+            dxs.append(-dx)
+            x0s.append(self.X0)
+
+        dxs = torch.hstack(dxs)
+        x0s = torch.hstack(x0s)
+
+        return self.X0
+
+    def fit(self, n=300, lr=1e-1):
+        self.X0 = torch.nn.Parameter(self.X0)
+
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
         out = np.nan
         for i in range(n):
             print(f'\riteration {i+1}/{n} = {(i+1) / n * 100:.2f}%, loss = {out:.2f}', end='')
-            out = torch.norm(1 - self.forward())
+            dx, dy = self.gradient()
+            out = torch.sqrt(dx * dx + dy * dy).sum()
             out.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -259,6 +349,21 @@ class ndPolynomial:
 
 
 if __name__ == '__main__':
+
+    x = torch.arange(0, 3) - 1
+    X = torch.stack(torch.meshgrid(x, x)).reshape(2, -1)
+    z1 = torch.tensor([0.2508, 0.3622, 0.3913, 0.3140, 0.3917, 0.2831, 0.3430, 0.3859, 0.1595])[:, None]
+    z2 = torch.tensor([0.4912, 0.5808, 0.1008, 0.4417, 0.5859, 0.1033, 0.3942, 0.5815, 0.0899])[:, None]
+    z = torch.hstack((z1, z2))
+    poly = PytorchPolyFit2D(X, z2)
+    dw, dh = -poly.newton()
+    plt.imshow(z2.reshape(3, 3).T, extent=[-1.5, 1.5, -1.5, 1.5])
+    plt.scatter(dw, dh)
+    xx, yy, zz = poly_surface(poly.coeffs[:, None].numpy(), 0, 0, N=100, threshold=1)
+    plt.contourf(xx, yy, zz, alpha=0.3)  # , colors='k', )
+
+    for i in range(len(z)):
+        plt.text(*X[:, i].T, f'{z2.numpy()[i, 0]:.5f}')
 
     x = np.linspace(-1000, 1000, 25)
     z = 5 + 2*x + 0.1 * x * x
