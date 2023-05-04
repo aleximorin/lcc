@@ -80,22 +80,23 @@ class LCC2D:
             print(f'computing localized cross correlations')
 
         # hale initially smooths the images with a sigma=1 window
-        smooth_window = gw.torch_gaussian_window2d(1).to(self.f.dtype)
+        smooth_window = gw.torch_gaussian_window2d(1).to(self.f.dtype).to(device)
+        
         f = F.conv2d(self.f.reshape(1, 1, self.height, self.width),
                      weight=smooth_window, padding='same')[0, 0]
         g = F.conv2d(self.g.reshape(1, 1, self.height, self.width),
                      weight=smooth_window, padding='same')[0, 0]
 
-        search_window = gw.torch_gaussian_window2d(self.search_sigma).to(self.f.dtype)
+        search_window = gw.torch_gaussian_window2d(self.search_sigma).to(self.f.dtype).to(device)
 
         # convolutions is a tensor of size (hlags * wlags, 1 channel, height, width)
         convolutions = torch.zeros((len(self.hlags) * len(self.wlags), 1, self.height, self.width), device=device)
 
         # we also need to apply normalization factors to the images
         cff = 1 / (F.conv2d((f * f).reshape(1, 1, self.height, self.width),
-                            weight=search_window, padding='same').sqrt()[0, 0])
+                            weight=search_window, padding='same').sqrt()[0, 0]).to(device)
         cgg = 1 / (F.conv2d((g * g).reshape(1, 1, self.height, self.width),
-                            weight=search_window, padding='same').sqrt()[0, 0])
+                            weight=search_window, padding='same').sqrt()[0, 0]).to(device)
         cff_moved = torch.zeros((len(self.hlags) * len(self.wlags), 1, self.height, self.width), device=device)
 
         # we need to move around one image and store it in an array
@@ -188,12 +189,13 @@ class LCC2D:
             t1 = time.time()
             print(f'\rtook {(t1 - t0):.2f} seconds')
 
-        return poly, self.dw + dw.reshape(self.height, self.width), self.dh + dh.reshape(self.height, self.width)
+        return poly, self.dw.to('cpu') + dw.reshape(self.height, self.width), self.dh.to('cpu') + dh.reshape(self.height, self.width)
 
     def debug_plot(self, aspect=1):
-
+                
         coeffs = np.moveaxis(self.poly.coeffs.numpy().reshape(-1, *self.f.shape), 0, -1)
-
+        convolutions = self.convolutions.cpu()
+        
         # CLICKABLE FIGURE
         i0, j0 = self.height // 2, self.width // 2
         # creation of the figure and adding the main axes on which stuff will be plotted
@@ -210,24 +212,24 @@ class LCC2D:
         main_ax.set_xlabel('$l_2$')
         main_ax.set_ylabel('$l_1$', rotation=0)
         # f_ax and g_ax are the before and after image
-        f_ax.imshow(self.f, aspect=aspect, origin='lower')
+        f_ax.imshow(self.f.cpu(), aspect=aspect, origin='lower')
         f_ax.text(0.99, 0.99, '$f$', ha='right', va='top', transform=f_ax.transAxes)
-        g_ax.imshow(self.g, aspect=aspect, origin='lower')
+        g_ax.imshow(self.g.cpu(), aspect=aspect, origin='lower')
         g_ax.text(0.99, 0.99, '$g$', ha='right', va='top', transform=g_ax.transAxes)
         # u_ax and v_ax are the axes on which we show the estimated shifts
-        u_ax.imshow(self.subdw, aspect=aspect, origin='lower', vmin=vf[0].min(), vmax=vf[0].max())
+        u_ax.imshow(self.subdw, aspect=aspect, origin='lower')#, vmin=vf[0].min(), vmax=vf[0].max())
         u_ax.text(0.99, 0.99, '$\hat{u}$', ha='right', va='top', transform=u_ax.transAxes)
-        v_ax.imshow(self.subdh, aspect=aspect, origin='lower', vmin=vf[1].min(), vmax=vf[1].max())
+        v_ax.imshow(self.subdh, aspect=aspect, origin='lower')#, vmin=vf[1].min(), vmax=vf[1].max())
         v_ax.text(0.99, 0.99, '$\hat{v}$', ha='right', va='top', transform=v_ax.transAxes)
         # conv_im is the 2d image that will be updated for every row and column inspected
-        conv_im = main_ax.imshow(self.convolutions[:, :, i0, j0], aspect='auto', origin='lower',
+        conv_im = main_ax.imshow(convolutions[:, :, i0, j0], aspect='auto', origin='lower',
                                  extent=[self.wlags.min() - 0.5,
                                          self.wlags.max() + 0.5,
                                          self.hlags.min() - 0.5,
                                          self.hlags.max() + 0.5],
                                  vmin=-1, vmax=1)
         # here we want to be able to have an updating polynomial surface
-        I, J = argmax2d(self.convolutions[:, :, i0, j0])
+        I, J = argmax2d(convolutions[:, :, i0, j0])
         xx, yy, z = poly_surface(coeffs[i0, j0], 0, 0, degree=2, threshold=self.threshold)
         conv_cntrs = [
             main_ax.contour(xx - self.hlags.max() + J, yy - self.wlags.max() + I, z, colors='k', linewidths=0.5)]
@@ -260,14 +262,14 @@ class LCC2D:
                 # fetching the x and y position of the cursor
                 j, i = int(event.xdata), int(event.ydata)
                 # updating the main_ax image
-                conv_im.set_data(self.convolutions[:, :, i, j])
+                conv_im.set_data(convolutions[:, :, i, j])
                 # updating the contours estimated from the polynomial surface
                 # here this part is a bit tedious as we have to
                 # compute the surface, remove and redraw the contours everytime
                 # it doesn't seem to be too laggy however
                 for tp in conv_cntrs[0].collections:
                     tp.remove()
-                I, J = argmax2d(self.convolutions[:, :, i, j])
+                I, J = argmax2d(convolutions[:, :, i, j])
                 xx, yy, z = poly_surface(coeffs[i, j], 0, 0,
                                          degree=2,
                                          threshold=self.threshold)
@@ -308,27 +310,27 @@ if __name__ == '__main__':
     im5 = np.load('data/spongebob_warp2_5.npy', allow_pickle=True).astype(np.float32)
     vf = np.load('data/vf_warp2.npy', allow_pickle=True) * 5
 
-    maxlag = 20
+    maxlag = 30
     wlags = np.arange(-maxlag, maxlag + 1)
     hlags = np.arange(-maxlag, maxlag + 1)
-    search_sigma = 10
+    search_sigma = 15
 
     lcc = LCC2D(im0, im5,
                 hlags, wlags,
                 search_sigma,
                 threshold=3)
 
-    lcc.debug_plot()
+    #lcc.debug_plot()
     plt.show()
 
     shift = torch.stack((lcc.subdw, lcc.subdh)).to(torch.float32)
 
-    lmbda = 1e3
-    beta = 1e2
+    lmbda = 1e1
+    beta = 1e5
 
     model = ShiftOptim(lcc.f, lcc.g, shift, lmbda=lmbda, beta=beta, correlation=lcc.convolutions)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    out, losses = model.fit(optimizer, n=3000)
+    out, losses = model.fit(optimizer, n=10000)
 
     from image_warping import warp_cv2
 
@@ -351,22 +353,22 @@ if __name__ == '__main__':
     axs[1].imshow(im5, origin='lower')
     axs[1].text(0.99, 0.99, f'Warped', ha='right', va='top', transform=axs[1].transAxes)
 
-    axs[2].imshow(warp_cv2(im0, torch.stack((lcc.dw, lcc.dh)).numpy()), origin='lower')
+    axs[2].imshow(warp_cv2(im0, torch.stack((lcc.dw, lcc.dh)).cpu().numpy()), origin='lower')
     axs[2].text(0.99, 0.99, f'Integer disp.', ha='right', va='top', transform=axs[2].transAxes)
 
-    axs[3].imshow(warp_cv2(im0, shift.numpy()), origin='lower')
+    axs[3].imshow(warp_cv2(im0, shift.cpu().numpy()), origin='lower')
     axs[3].text(0.99, 0.99, f'Subpixel disp.', ha='right', va='top', transform=axs[3].transAxes)
 
-    axs[4].imshow(model.forward().detach(), origin='lower')
+    axs[4].imshow(model.forward().cpu().detach(), origin='lower')
     axs[4].text(0.99, 0.99, f'Optimized disp.', ha='right', va='top', transform=axs[4].transAxes)
 
     fig.subplots_adjust(hspace=0.05, wspace=0.05)
 
     fig, axs = plt.subplots(3, 2, sharex='all', sharey='all')
-    axs[0, 0].imshow(shift[0], origin='lower', vmin=vf[0].min(), vmax=vf[0].max())
+    axs[0, 0].imshow(shift[0].cpu(), origin='lower', vmin=vf[0].min(), vmax=vf[0].max())
     axs[0, 0].text(0.99, 0.99, 'lcc $\hat{v}_x$', ha='right', va='top', transform=axs[0, 0].transAxes)
 
-    axs[0, 1].imshow(shift[1], origin='lower', vmin=vf[1].min(), vmax=vf[1].max())
+    axs[0, 1].imshow(shift[1].cpu(), origin='lower', vmin=vf[1].min(), vmax=vf[1].max())
     axs[0, 1].text(0.99, 0.99, 'lcc $\hat{v}_y$', ha='right', va='top', transform=axs[0, 1].transAxes)
 
     axs[1, 0].imshow(out[0], origin='lower', vmin=vf[0].min(), vmax=vf[0].max())
@@ -380,8 +382,9 @@ if __name__ == '__main__':
 
     axs[2, 1].imshow(vf[1], origin='lower', vmin=vf[1].min(), vmax=vf[1].max())
     axs[2, 1].text(0.99, 0.99, '$v_y$', ha='right', va='top', transform=axs[2, 1].transAxes)
-
+        
     fig.subplots_adjust(hspace=0.05, wspace=0.05)
+    fig.savefig('deformation.png')
     plt.show()
 
 """

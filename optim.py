@@ -64,7 +64,7 @@ class ShiftOptim(torch.nn.Module):
         self.lmbda = lmbda
         self.beta = beta
 
-        self.laplace = get_laplace()
+        self.laplace = get_laplace().to(device)
 
         self.to(device)
 
@@ -107,9 +107,9 @@ class ShiftOptim(torch.nn.Module):
             optimizer.step()
             optimizer.zero_grad()
 
-            losses[i] = err.detach().numpy(), grad.detach().numpy(), diff.detach().numpy()
+            losses[i] = err.cpu().detach().numpy(), grad.cpu().detach().numpy(), diff.cpu().detach().numpy()
 
-        out = self.weights.detach().clone().numpy()
+        out = self.weights.cpu().detach().clone().numpy()
 
         return unnormalize(out, self.shape), losses
 

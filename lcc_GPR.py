@@ -15,7 +15,7 @@ if __name__ == '__main__':
     im1 = im1[150:, 10:-5]
     im1 = 2 * (im1 - im1.min())/(im1.max() - im1.min()) - 1
 
-    maxlag = 20
+    maxlag = 30
     wlags = np.arange(-maxlag, maxlag + 1)
     hlags = np.arange(-maxlag, maxlag + 1)
     search_sigma = 18
@@ -23,16 +23,19 @@ if __name__ == '__main__':
     lcc = LCC2D(im0, im1,
                 hlags, wlags,
                 search_sigma,
-                threshold=1)
+                threshold=3)
 
-    shift = torch.stack((lcc.subdw, lcc.subdh)).to(torch.float64)
+    #lcc.debug_plot()
+    plt.show()
 
-    lmbda = 1e3
-    beta = 1e2
-    model = ShiftOptim(lcc.f, lcc.g, shift, lmbda=lmbda, beta=beta, correlation=lcc.corr)
+    shift = torch.stack((lcc.subdw, lcc.subdh)).to(torch.float32)
+
+    lmbda = 1e1
+    beta = 1e5
+
+    model = ShiftOptim(lcc.f, lcc.g, shift, lmbda=lmbda, beta=beta, correlation=lcc.convolutions)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    out, losses = model.fit(optimizer, n=2500)
-    print()
+    out, losses = model.fit(optimizer, n=10000)
 
     plt.figure()
     plt.plot(losses[:, 0], ls='dashed', label='$\epsilon$')
@@ -93,4 +96,5 @@ if __name__ == '__main__':
     axs[1, 1].imshow(out[1], origin='lower', vmin=hlags.min(), vmax=hlags.max())
     axs[1, 1].text(0.99, 0.99, 'optim $\hat{v}_y$', ha='right', va='top', transform=axs[1, 1].transAxes)
     fig.subplots_adjust(hspace=0.05, wspace=0.05)
+    
     plt.show()

@@ -5,11 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bdd7c877-2afe-4d9b-bb8d-31dcd62f3c19" name="Changes" comment="">
+<<<<<<< HEAD
+      <change afterPath="$PROJECT_DIR$/lcc_histograms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LCC2D.py" beforeDir="false" afterPath="$PROJECT_DIR$/LCC2D.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/LCC2D_torch.py" beforeDir="false" afterPath="$PROJECT_DIR$/LCC2D_torch.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/environment.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Untitled.ipynb" beforeDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/.idea/image_matching.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/image_matching.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LCC2D_torch.py" beforeDir="false" afterPath="$PROJECT_DIR$/LCC2D_torch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lcc_GPR.py" beforeDir="false" afterPath="$PROJECT_DIR$/lcc_GPR.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/optim.py" beforeDir="false" afterPath="$PROJECT_DIR$/optim.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/poly_interp.py" beforeDir="false" afterPath="$PROJECT_DIR$/poly_interp.py" afterDir="false" />
+>>>>>>> 5b9a90d370ea7b1349644fab9949b325ed27c891
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,6 +32,9 @@
         <option value="Python Script" />
       </list>
     </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitSEFilterConfiguration">
     <file-type-list>
@@ -42,8 +55,15 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "last_opened_file_path": "C:/Users/alexi/Desktop/2scool4cool/a2022/image_matching",
+<<<<<<< HEAD
+    "last_opened_file_path": "C:/Users/alexi/Desktop/2scool4cool/a2022/geomech/Fracture",
     "settings.editor.selected.configurable": "editor.preferences.fonts.default"
+=======
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/alexi/Desktop/2scool4cool/a2022/image_matching",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+>>>>>>> 5b9a90d370ea7b1349644fab9949b325ed27c891
   }
 }]]></component>
   <component name="RecentsManager">
@@ -56,8 +76,8 @@
       <recent name="C:\Users\alexi\Desktop\2scool4cool\a2022\image matching\data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.LCC2D_torch">
-    <configuration name="LCC2D" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.lcc_histograms">
+    <configuration name="FROGS_validation_example" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="image_matching" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -65,11 +85,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../FROGS_cpp-main/FROGS_cpp-main" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/LCC2D.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../FROGS_cpp-main/FROGS_cpp-main/FROGS_validation_example.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -99,7 +119,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="VMorph" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="lcc_GPR" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="image_matching" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -111,7 +131,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/VMorph.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/lcc_GPR.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -120,7 +140,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="lcc_seismic" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="lcc_histograms" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="image_matching" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -132,7 +152,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/lcc_seismic.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/lcc_histograms.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -185,11 +205,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.lcc_histograms" />
+        <item itemvalue="Python.FROGS_validation_example" />
         <item itemvalue="Python.LCC2D_torch" />
+        <item itemvalue="Python.lcc_GPR" />
         <item itemvalue="Python.poly_interp" />
-        <item itemvalue="Python.LCC2D" />
-        <item itemvalue="Python.VMorph" />
-        <item itemvalue="Python.lcc_seismic" />
       </list>
     </recent_temporary>
   </component>
@@ -270,18 +290,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lcc_GPR.py</url>
-          <line>27</line>
+          <line>30</line>
           <option name="timeStamp" value="568" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/3Dplotter.py</url>
           <line>119</line>
           <option name="timeStamp" value="570" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/lcc_GPR.py</url>
-          <line>17</line>
-          <option name="timeStamp" value="576" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/LCC2D.py</url>
@@ -310,7 +325,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../geomech/Fracture/FEM/Matrix.py</url>
-          <line>39</line>
+          <line>41</line>
           <option name="timeStamp" value="700" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -333,6 +348,7 @@
           <line>195</line>
           <option name="timeStamp" value="751" />
         </line-breakpoint>
+<<<<<<< HEAD
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/poly_interp.py</url>
           <line>358</line>
@@ -343,6 +359,23 @@
           <line>328</line>
           <option name="timeStamp" value="774" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../FROGS_cpp-main/FROGS_cpp-main/parameter_class.py</url>
+          <line>48</line>
+          <option name="timeStamp" value="776" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/lcc_histograms.py</url>
+          <line>30</line>
+          <option name="timeStamp" value="781" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/lcc_histograms.py</url>
+          <line>23</line>
+          <option name="timeStamp" value="782" />
+        </line-breakpoint>
+=======
+>>>>>>> 5b9a90d370ea7b1349644fab9949b325ed27c891
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">

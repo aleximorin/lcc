@@ -107,23 +107,13 @@ class PytorchPolyFit2D(torch.nn.Module):
         return hess
 
     def newton(self, niter=20, nugget=1e-3):
-        self.X0 = torch.zeros(2, self.images.shape[-1])
-
         reg = torch.eye(2, 2)[None, :]*nugget
-        dxs = []
-        x0s = []
         for i in range(niter):
             grad = self.gradient()
             hess = self.hessian()
             inv = torch.linalg.inv(hess + reg)
             dx = torch.einsum('nij, ni -> jn', inv, grad)
             self.X0 = self.X0 - dx
-
-            dxs.append(-dx)
-            x0s.append(self.X0)
-
-        dxs = torch.hstack(dxs)
-        x0s = torch.hstack(x0s)
 
         return self.X0
 
@@ -319,6 +309,7 @@ class ndPolynomial:
 
             if optimum:
                 out = out[:, 0]
+
 
             return out
 

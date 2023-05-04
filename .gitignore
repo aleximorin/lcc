@@ -2,9 +2,11 @@ data/Findelen_2210_datacube_700_3.mat
 data/Findelen_2210_datacube_700_2.mat
 data/Findelen_2207_datacube_700_3.mat
 data/Findelen_2207_datacube_700_2.mat
+data/Findelen
 papers
 old
 powerpoints
 unet
 spongebob_5000.p
 spongebob_weights.p
+gpr_gridsearch
