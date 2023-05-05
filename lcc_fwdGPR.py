@@ -9,8 +9,8 @@ if __name__ == '__main__':
     path0 = '/home/amorin/GeoHawk_GPR/IceFlowGPR/depot_SIMU/fwd_t0/out.npy'
     path1 = '/home/amorin/GeoHawk_GPR/IceFlowGPR/depot_SIMU/fwd_t1/out.npy'
 
-    im0 = np.load(path0, allow_pickle=True)
-    im1 = np.load(path1, allow_pickle=True)
+    im0 = np.load(path0, allow_pickle=True).T
+    im1 = np.load(path1, allow_pickle=True).T
 
     maxlag = 20
     wlags = np.arange(-maxlag, maxlag + 1)
@@ -24,8 +24,8 @@ if __name__ == '__main__':
 
     shift = torch.stack((lcc.subdw, lcc.subdh)).to(torch.float32)
 
-    lmbda = 1e1
-    beta = 1e3
+    lmbda = 1e2
+    beta = 0
     niter = 1e4
 
     model = ShiftOptim(lcc.f, lcc.g, shift, lmbda=lmbda, beta=beta, correlation=lcc.convolutions)
