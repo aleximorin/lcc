@@ -31,7 +31,7 @@ if __name__ == '__main__':
     shift = torch.stack((lcc.subdw, lcc.subdh)).to(torch.float32)
 
     lmbda = 1e1
-    beta = 1e5
+    beta = 1e3
 
     model = ShiftOptim(lcc.f, lcc.g, shift, lmbda=lmbda, beta=beta, correlation=lcc.convolutions)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
