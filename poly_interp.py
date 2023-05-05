@@ -106,7 +106,7 @@ class PytorchPolyFit2D(torch.nn.Module):
         hess = hess.moveaxis(-1, 0)
         return hess
 
-    def newton(self, niter=20, nugget=1e-3):
+    def newton(self, niter=20, nugget=1e-3, radius=3):
         reg = torch.eye(2, 2)[None, :]*nugget
         for i in range(niter):
             grad = self.gradient()
@@ -114,6 +114,9 @@ class PytorchPolyFit2D(torch.nn.Module):
             inv = torch.linalg.inv(hess + reg)
             dx = torch.einsum('nij, ni -> jn', inv, grad)
             self.X0 = self.X0 - dx
+
+        mask = np.linalg.norm(self.X0, axis=0) > radius
+        self.X0[:, mask] = 0
 
         return self.X0
 

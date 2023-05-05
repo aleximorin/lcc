@@ -320,17 +320,17 @@ if __name__ == '__main__':
                 search_sigma,
                 threshold=3)
 
-    #lcc.debug_plot()
+    lcc.debug_plot()
     plt.show()
 
     shift = torch.stack((lcc.subdw, lcc.subdh)).to(torch.float32)
 
     lmbda = 1e1
-    beta = 1e5
+    beta = 0  # 1e5
 
     model = ShiftOptim(lcc.f, lcc.g, shift, lmbda=lmbda, beta=beta, correlation=lcc.convolutions)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    out, losses = model.fit(optimizer, n=10000)
+    out, losses = model.fit(optimizer, n=3000)
 
     from image_warping import warp_cv2
 

@@ -98,7 +98,7 @@ class ShiftOptim(torch.nn.Module):
         losses = np.zeros((int(n), 3))
         loss = np.nan
         for i in range(int(n)):
-            print(f'\riteration {i+1}/{n} = {(i+1) / n * 100:.2f}%, loss = {loss:.2f}', end='')
+            print(f'\riteration {i+1}/{n} = {(i+1) / n * 100:.5f}%, loss = {loss:.2f}', end='')
 
             ghat = self.forward()
             err, grad, diff = self.loss(ghat)
