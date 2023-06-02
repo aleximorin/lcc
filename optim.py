@@ -109,6 +109,7 @@ class ShiftOptim(torch.nn.Module):
 
             losses[i] = err.cpu().detach().numpy(), grad.cpu().detach().numpy(), diff.cpu().detach().numpy()
 
+        print()
         out = self.weights.cpu().detach().clone().numpy()
 
         return unnormalize(out, self.shape), losses

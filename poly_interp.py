@@ -4,8 +4,6 @@ import itertools
 from scipy.optimize import root, root_scalar
 
 import torch
-
-
 def polymatrix2d(x, y, ij):
 
     size = len(x)
