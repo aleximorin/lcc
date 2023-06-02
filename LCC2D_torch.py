@@ -135,63 +135,57 @@ class LCC2D:
 
     def subpixel(self):
 
-        t0 = time.time()
-
         if self.verbose:
             print(f'computing subpixel displacements')
 
-        # taking into account where the index is too close to the given threshold for the rows
-        dh = self.dh.clone().to('cpu')
+        t0 = time.time()
 
-        h_index_left = dh - self.hlags.min() < self.threshold
-        h_index_right = self.hlags.max() - dh < self.threshold
-        dh[h_index_left] += self.hlags.min() - dh[h_index_left] + self.threshold
-        dh[h_index_right] -= dh[h_index_right] - self.hlags.max() + self.threshold
+        # taking into account where the index is too close to the given threshold for the rows
+        dh = self.dh
+        h_index_left = (dh - self.hlags.min()) < self.threshold
+        h_index_right = (self.hlags.max() - dh) < self.threshold
+        dh = torch.where(h_index_left, self.hlags.min() - dh + self.threshold, dh)
+        dh = torch.where(h_index_right, dh - (dh - self.hlags.max() + self.threshold), dh)
 
         # we do the same but for the columns
-        dw = self.dw.clone().to('cpu')
-
-        w_index_left = dw - self.wlags.min() < self.threshold
-        w_index_right = self.wlags.max() - dw < self.threshold
-        dw[w_index_left] += self.wlags.min() - dw[w_index_left] + self.threshold
-        dw[w_index_right] -= dw[w_index_right] - self.wlags.max() + self.threshold
+        dw = self.dw
+        w_index_left = (dw - self.wlags.min()) < self.threshold
+        w_index_right = (self.wlags.max() - dw) < self.threshold
+        dw = torch.where(w_index_left, self.wlags.min() - dw + self.threshold, dw)
+        dw = torch.where(w_index_right, dw - self.wlags.max() + self.threshold, dw)
 
         # we need to extract the surrounding images to the integer maximum to be able to fit the quadratic surface
         i = dh.flatten() + self.hlags.max()
         j = dw.flatten() + self.wlags.max()
 
-        # there has to be a better way to index this lol
-        arange = torch.arange(self.width * self.height)
-        conv = self.convolutions.reshape(len(self.hlags), len(self.wlags), self.height * self.width)
+        # we reshape the convolutions tensor so that we can easily index it with flattened hlags * wlags coordinates
+        conv = self.convolutions.view(len(self.hlags) * len(self.wlags), self.height * self.width)
 
-        offset = torch.arange(-self.threshold, self.threshold + 1)
+        offset = torch.arange(-self.threshold, self.threshold + 1, device=device)
         n = 2 * self.threshold + 1
 
-        # we store the 3x3 cross-correlation around the maximum in the images tensor
-        images = torch.zeros(n, n, self.width * self.height)
-
-        # we fill the images tensor by iterating every combination of the offset [-1, 0, 1]
-        for k, (di, dj) in enumerate(product(offset, offset)):
-            i2, j2 = i + di, j + dj
-            images[di + self.threshold, dj + self.threshold] = conv[i2, j2, arange]
-
-        # we jsut have to flip it one way because of indexing
-        images = images.moveaxis(0, 1)
-
+        # Calculate the indices for i2 and j2 using broadcasting
         # the coordinates are the same for every quadratic surface
         X = torch.stack(torch.meshgrid(offset, offset)).reshape(2, -1)
+        i2, j2 = i.view(-1, 1) + X[0], j.view(-1, 1) + X[1]
+
+        # Calculate the flat indices for i2 and j2
+        flat_indices = (i2 * len(self.wlags) + j2).long()
+
+        images = torch.gather(conv, 0, flat_indices.T)
+        images = images.view(n, n, -1).moveaxis(0, 1).reshape(n * n, -1)
 
         # this vectorized implementation for fitting polynomials goes hard
-        print(X.device)
-        print(images.device)
-        poly = PytorchPolyFit2D(X, images.reshape(n * n, -1), order=2)
+        poly = PytorchPolyFit2D(X.to('cpu'), images.to('cpu'), order=2)
         dw, dh = poly.newton()
 
         if self.verbose:
             t1 = time.time()
             print(f'\rtook {(t1 - t0):.2f} seconds')
 
-        return poly, self.dw.to('cpu') + dw.reshape(self.height, self.width), self.dh.to('cpu') + dh.reshape(self.height, self.width)
+        return poly, \
+            self.dw.to('cpu') + dw.reshape(self.height, self.width), \
+            self.dh.to('cpu') + dh.reshape(self.height, self.width)
 
     def debug_plot(self, aspect=1):
                 
