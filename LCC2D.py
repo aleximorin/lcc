@@ -7,7 +7,6 @@ from scipy.ndimage import convolve1d
 
 import gaussian_windows as gw
 
-from numba import njit
 import itertools
 
 from scipy.optimize import minimize
@@ -201,8 +200,8 @@ class LCC2D:
 
         # WARNING: ATTEMPT
         # here we smooth the correlations in the xy space for every lag
-        #convolutions = convolve1d(convolutions, self.smooth_window, axis=-1)
-        #convolutions = convolve1d(convolutions, self.smooth_window, axis=-2)
+        convolutions = convolve1d(convolutions, self.smooth_window, axis=-1)
+        convolutions = convolve1d(convolutions, self.smooth_window, axis=-2)
 
         # we loop in 2d to compute subpixel displacements
         # # also could be parallelized

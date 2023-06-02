@@ -141,7 +141,7 @@ class LCC2D:
             print(f'computing subpixel displacements')
 
         # taking into account where the index is too close to the given threshold for the rows
-        dh = self.dh.clone()
+        dh = self.dh.clone().to('cpu')
 
         h_index_left = dh - self.hlags.min() < self.threshold
         h_index_right = self.hlags.max() - dh < self.threshold
@@ -149,7 +149,7 @@ class LCC2D:
         dh[h_index_right] -= dh[h_index_right] - self.hlags.max() + self.threshold
 
         # we do the same but for the columns
-        dw = self.dw.clone()
+        dw = self.dw.clone().to('cpu')
 
         w_index_left = dw - self.wlags.min() < self.threshold
         w_index_right = self.wlags.max() - dw < self.threshold
@@ -182,6 +182,8 @@ class LCC2D:
         X = torch.stack(torch.meshgrid(offset, offset)).reshape(2, -1)
 
         # this vectorized implementation for fitting polynomials goes hard
+        print(X.device)
+        print(images.device)
         poly = PytorchPolyFit2D(X, images.reshape(n * n, -1), order=2)
         dw, dh = poly.newton()
 
