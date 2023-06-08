@@ -10,3 +10,5 @@ unet
 spongebob_5000.p
 spongebob_weights.p
 gpr_gridsearch
+data/simulations.npy
+data
